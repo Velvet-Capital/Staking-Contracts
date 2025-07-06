@@ -17,3 +17,22 @@ In the deployment file also you can instead of using 30 as max number of lock pe
 ## Usage
 
 This modified version is intended for testing purposes with shorter time periods to facilitate faster development cycles. 
+
+# VelvetToken Contract (VLT)
+
+A minimal BEP-20 token with a **time-locked launch** and **owner-controlled whitelist**.
+
+## ✨ Key features
+- **Launch lock** – transfers are blocked until `transferAllowedTimestamp`.
+- **Whitelist** – owner can add/remove addresses that bypass the lock.
+- **ETA guard** – once the lock has started, the owner can *only* move the launch **earlier** (never later).
+- **Minting** – owner-only `mintTo()` for treasury, airdrops, etc.
+
+## 🔧 Quick start
+
+```bash
+# Install deps
+npm install           # Hardhat, Ethers, etc.
+
+# Compile
+npx hardhat compile
