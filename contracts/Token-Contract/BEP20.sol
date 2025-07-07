@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.30;
+pragma solidity >=0.4.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -37,6 +37,7 @@ contract BEP20 is Context, IBEP20, Ownable {
     mapping(address => mapping(address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
+    uint256 private immutable _cap;
 
     string private _name;
     string private _symbol;
@@ -51,10 +52,11 @@ contract BEP20 is Context, IBEP20, Ownable {
      * All three of these values are immutable: they can only be set once during
      * construction.
      */
-    constructor(string memory tokenName, string memory tokenSymbol) Ownable(msg.sender) {
-        _name = tokenName;
-        _symbol = tokenSymbol;
+    constructor(string memory name, string memory symbol) Ownable(msg.sender) {
+        _name = name;
+        _symbol = symbol;
         _decimals = 18;
+        _cap = 1_000_000_000_000_000_000_000_000_000;
     }
 
     /**
@@ -90,6 +92,13 @@ contract BEP20 is Context, IBEP20, Ownable {
      */
     function totalSupply() public view override returns (uint256) {
         return _totalSupply;
+    }
+
+    /**
+     * @dev Returns the cap on the token's total supply.
+     */
+    function cap() public view virtual returns (uint256) {
+        return _cap;
     }
 
     /**
@@ -269,6 +278,8 @@ contract BEP20 is Context, IBEP20, Ownable {
         require(account != address(0), "BEP20: mint to the zero address");
 
         _totalSupply = _totalSupply + amount;
+        require(_totalSupply <= _cap, "BEP20: Total supply exceeds cap");
+
         _balances[account] = _balances[account] + amount;
         emit Transfer(address(0), account, amount);
     }
