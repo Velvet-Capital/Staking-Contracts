@@ -3,12 +3,12 @@ import { Signer } from "ethers";
 
 
 export async function setupTest() {
-    await deployments.fixture(["MockERC20", "veVirtual"]);
+    await deployments.fixture(["MockERC20", "veVelvet"]);
     
     const [deployer, user1, user2] = await ethers.getSigners();
     
     const mockToken = await getContract("MockERC20", deployer);
-    const veVirtual = await getContract("veVirtual", deployer);
+    const veVelvet = await getContract("veVelvet", deployer);
     
     // Transfer initial tokens to users
     await mockToken.transfer(user1.address, ethers.parseEther("1000"));
@@ -16,7 +16,7 @@ export async function setupTest() {
     
     return {
         mockToken,
-        veVirtual,
+        veVelvet,
         deployer,
         user1,
         user2

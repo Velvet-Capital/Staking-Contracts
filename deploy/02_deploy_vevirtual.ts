@@ -10,9 +10,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   const mockToken = await deployments.get("MockERC20");
 
-  await deploy("veVirtual", {
+  await deploy("veVelvet", {
     from: deployer,
-    contract: "veVirtual",
+    contract: "veVelvet",
     proxy: {
       proxyContract: "OpenZeppelinTransparentProxy",
       viaAdminContract: "DefaultProxyAdmin",
@@ -28,5 +28,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 export default func;
-func.tags = ["veVirtual"];
+func.tags = ["veVelvet"];
 func.dependencies = ["MockERC20"]; 

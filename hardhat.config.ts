@@ -4,7 +4,7 @@ import "@openzeppelin/hardhat-upgrades";
 import "hardhat-deploy";
 import "dotenv/config";
 const config: HardhatUserConfig = {
-  solidity: "0.8.20",
+  solidity: "0.8.30",
   namedAccounts: {
     deployer: {
       default: 0,
@@ -16,7 +16,7 @@ const config: HardhatUserConfig = {
     user2: {
       default: 2
     }
-  },
+  }, 
   networks: {
     base: {
       url: process.env.BSC_RPC || "",

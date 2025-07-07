@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.30;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 import "@openzeppelin/contracts-upgradeable/governance/utils/VotesUpgradeable.sol";
 
-contract veVirtual is
+contract veVelvet is
     Initializable,
     ReentrancyGuardUpgradeable,
     AccessControlUpgradeable,
@@ -148,10 +148,6 @@ contract veVirtual is
         require(amount > 0, "Amount must be greater than 0");
         require(numWeeks <= maxWeeks, "Num weeks must be less than max weeks");
         require(numWeeks > 0, "Num weeks must be greater than 0");
-        require(
-            locks[_msgSender()].length < MAX_POSITIONS,
-            "Over max positions"
-        );
 
         IERC20(baseToken).safeTransferFrom(_msgSender(), address(this), amount);
 
@@ -159,7 +155,7 @@ contract veVirtual is
             numWeeks = maxWeeks;
         }
 
-        uint256 end = block.timestamp + uint256(numWeeks) * 1 minutes;
+        uint256 end = block.timestamp + uint256(numWeeks) * 1 weeks;
 
         Lock memory lock = Lock({
             amount: amount,
@@ -227,11 +223,10 @@ contract veVirtual is
         uint256 index = _indexOf(account, id);
 
         Lock storage lock = locks[account][index];
-        require(block.timestamp < lock.end, "Lock is expired");
         lock.autoRenew = !lock.autoRenew;
         lock.numWeeks = maxWeeks;
         lock.start = block.timestamp;
-        lock.end = block.timestamp + uint(lock.numWeeks) * 1 minutes;
+        lock.end = block.timestamp + uint(lock.numWeeks) * 1 weeks;
 
         emit AutoRenew(account, id, lock.autoRenew);
     }
@@ -272,11 +267,11 @@ contract veVirtual is
     }
 
     function name() public pure returns (string memory) {
-        return "veVIRTUAL";
+        return "veVELVET";
     }
 
     function symbol() public pure returns (string memory) {
-        return "veVIRTUAL";
+        return "veVELVET";
     }
 
     function decimals() public pure returns (uint8) {
