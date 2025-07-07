@@ -1,22 +1,29 @@
-# Staking Contracts
+# veVelvet Staking Contract
 
-## Overview
+A vote-escrowed (ve) staking system that allows users to lock tokens for voting power with time-based decay.
 
-This repository contains a modified version of the Virtual Protocol's veVirtual staking contract for development and testing purposes.
+## Features
 
-## Important Modifications
+- **Token Locking**: Lock ERC20 tokens for 1-30 weeks
+- **Voting Power**: Earn voting power based on amount and lock duration
+- **Auto-Renewal**: Optional perpetual locking with max voting power
+- **Position Extension**: Extend existing locks before expiration
+- **Multiple Positions**: Up to 200 concurrent locks per user
 
-The staking contract here has the minimum time period for staking set to be 1 minute which is hardcoded in the contract. The original contract is here: https://github.com/Virtual-Protocol/protocol-contracts/blob/main/contracts/token/veVirtual.sol
+## Key Parameters
 
-### To Restore Original Behavior
+- **Max Lock Duration**: 30 weeks
+- **Max Positions**: 200 per user
+- **Voting Power**: `amount * (lockWeeks / 30)`
+- **Time Decay**: Linear decrease over lock period
 
-To get this contract like the original one please update the hardcoded values that are in mint back to weeks like the original one.
+## Quick Start
 
-In the deployment file also you can instead of using 30 as max number of lock period use 52 like for the original one.
-
-## Usage
-
-This modified version is intended for testing purposes with shorter time periods to facilitate faster development cycles. 
+```bash
+npm install
+npm run compile
+npm test
+```
 
 # VelvetToken Contract (VLT)
 
