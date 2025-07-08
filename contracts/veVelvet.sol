@@ -122,6 +122,9 @@ contract veVelvet is
         );
 
         if (lock.autoRenew) {
+            if (timestamp < lock.start) {
+                return 0;
+            }
             return value;
         }
 
