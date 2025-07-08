@@ -218,4 +218,28 @@ describe("veVelvet", function () {
         const balanceAfterExpiry = await veVelvet.balanceOf(user1.address);
         expect(balanceAfterExpiry).to.equal(0n);
     });
+
+    it("Should enforce MAX_POSITIONS limit", async () => {
+        const { mockToken, veVelvet, user1 } = await setupTest();
+
+        const stakeAmount = ethers.parseEther("1");
+        const numWeeks = 26;
+
+        await mockToken.connect(user1).approve(veVelvet.target, ethers.parseEther("201"));
+
+        for (let i = 0; i < 200; i++) {
+            await veVelvet.connect(user1).stake(stakeAmount, numWeeks, false);
+        }
+
+        const numPositions = await veVelvet.numPositions(user1.address);
+        expect(numPositions).to.equal(200n);
+
+        await expect(
+            veVelvet.connect(user1).stake(stakeAmount, numWeeks, false)
+        ).to.be.revertedWith("Maximum positions reached");
+
+        // Verify we still have exactly 200 positions
+        const finalNumPositions = await veVelvet.numPositions(user1.address);
+        expect(finalNumPositions).to.equal(200n);
+    });
 }); 

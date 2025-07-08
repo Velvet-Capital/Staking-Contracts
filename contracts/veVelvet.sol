@@ -149,6 +149,11 @@ contract veVelvet is
         require(numWeeks <= maxWeeks, "Num weeks must be less than max weeks");
         require(numWeeks > 0, "Num weeks must be greater than 0");
 
+        require(
+            locks[_msgSender()].length < MAX_POSITIONS,
+            "Maximum positions reached"
+        );
+
         IERC20(baseToken).safeTransferFrom(_msgSender(), address(this), amount);
 
         if (autoRenew == true) {
