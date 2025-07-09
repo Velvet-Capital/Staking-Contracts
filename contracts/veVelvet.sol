@@ -221,9 +221,10 @@ contract veVelvet is
         }
         locks[account].pop();
 
+        _transferVotingUnits(account, address(0), amount);
+
         IERC20(baseToken).safeTransfer(account, amount);
         emit Withdraw(account, id, amount);
-        _transferVotingUnits(account, address(0), amount);
     }
 
     function toggleAutoRenew(uint256 id) external nonReentrant {
