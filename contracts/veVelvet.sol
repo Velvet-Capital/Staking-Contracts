@@ -148,12 +148,47 @@ contract veVelvet is
         uint8 numWeeks,
         bool autoRenew
     ) external nonReentrant {
+        _stake(_msgSender(), amount, numWeeks, autoRenew);
+    }
+
+    /// @notice Tokens are pulled from the caller; the lock is owned by `account`.
+    function stakeFor(
+        address account,
+        uint256 amount,
+        uint8 numWeeks,
+        bool autoRenew
+    ) external nonReentrant onlyRole(ADMIN_ROLE) {
+        _stake(account, amount, numWeeks, autoRenew);
+    }
+
+    /// @notice `numWeeks` and `autoRenew` apply to every entry in the batch.
+    function stakeForBatch(
+        address[] calldata accounts,
+        uint256[] calldata amounts,
+        uint8 numWeeks,
+        bool autoRenew
+    ) external nonReentrant onlyRole(ADMIN_ROLE) {
+        require(accounts.length > 0, "Empty batch");
+        require(accounts.length == amounts.length, "Length mismatch");
+
+        for (uint256 i = 0; i < accounts.length; i++) {
+            _stake(accounts[i], amounts[i], numWeeks, autoRenew);
+        }
+    }
+
+    function _stake(
+        address account,
+        uint256 amount,
+        uint8 numWeeks,
+        bool autoRenew
+    ) internal {
+        require(account != address(0), "Invalid account");
         require(amount > 0, "Amount must be greater than 0");
         require(numWeeks <= maxWeeks, "Num weeks must be less than max weeks");
         require(numWeeks > 0, "Num weeks must be greater than 0");
 
         require(
-            locks[_msgSender()].length < MAX_POSITIONS,
+            locks[account].length < MAX_POSITIONS,
             "Maximum positions reached"
         );
 
@@ -173,9 +208,9 @@ contract veVelvet is
             autoRenew: autoRenew,
             id: _nextId++
         });
-        locks[_msgSender()].push(lock);
-        emit Stake(_msgSender(), lock.id, amount, numWeeks);
-        _transferVotingUnits(address(0), _msgSender(), amount);
+        locks[account].push(lock);
+        emit Stake(account, lock.id, amount, numWeeks);
+        _transferVotingUnits(address(0), account, amount);
     }
 
     function _calcValue(

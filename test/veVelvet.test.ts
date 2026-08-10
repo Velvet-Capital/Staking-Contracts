@@ -242,4 +242,144 @@ describe("veVelvet", function () {
         const finalNumPositions = await veVelvet.numPositions(user1.address);
         expect(finalNumPositions).to.equal(200n);
     });
-}); 
+
+    describe("stakeFor / stakeForBatch (admin only)", () => {
+        it("Should revert for non-admin callers", async () => {
+            const { mockToken, veVelvet, user1, user2 } = await setupTest();
+            const amount = ethers.parseEther("100");
+
+            await mockToken.connect(user1).approve(veVelvet.target, amount);
+            await expect(
+                veVelvet.connect(user1).stakeFor(user2.address, amount, 26, false)
+            ).to.be.revertedWithCustomError(veVelvet, "AccessControlUnauthorizedAccount");
+
+            await expect(
+                veVelvet
+                    .connect(user1)
+                    .stakeForBatch([user2.address], [amount], 26, false)
+            ).to.be.revertedWithCustomError(veVelvet, "AccessControlUnauthorizedAccount");
+        });
+
+        it("Should credit the recipient and debit the caller", async () => {
+            const { mockToken, veVelvet, deployer, user1 } = await setupTest();
+            const amount = ethers.parseEther("100");
+
+            const adminBefore = await mockToken.balanceOf(deployer.address);
+            const userBefore = await mockToken.balanceOf(user1.address);
+
+            await mockToken.approve(veVelvet.target, amount);
+            await veVelvet.stakeFor(user1.address, amount, 26, false);
+
+            // tokens came from the admin, not the recipient
+            expect(await mockToken.balanceOf(deployer.address)).to.equal(adminBefore - amount);
+            expect(await mockToken.balanceOf(user1.address)).to.equal(userBefore);
+
+            // the lock belongs to the recipient
+            expect(await veVelvet.numPositions(user1.address)).to.equal(1n);
+            expect(await veVelvet.numPositions(deployer.address)).to.equal(0n);
+            expect(await veVelvet.stakedAmountOf(user1.address)).to.equal(amount);
+
+            const expected = (amount * 26n) / 30n;
+            expect(await veVelvet.balanceOf(user1.address)).to.be.closeTo(
+                expected,
+                expected / 1000n
+            );
+        });
+
+        it("Should let only the recipient withdraw the lock", async () => {
+            const { mockToken, veVelvet, user1 } = await setupTest();
+            const amount = ethers.parseEther("100");
+
+            await mockToken.approve(veVelvet.target, amount);
+            await veVelvet.stakeFor(user1.address, amount, 1, false);
+            const id = (await veVelvet.getPositions(user1.address, 0, 1))[0].id;
+
+            await time.increase(7 * 24 * 60 * 60);
+
+            // admin does not own it
+            await expect(veVelvet.withdraw(id)).to.be.revertedWith("Lock not found");
+
+            const before = await mockToken.balanceOf(user1.address);
+            await veVelvet.connect(user1).withdraw(id);
+            expect(await mockToken.balanceOf(user1.address)).to.equal(before + amount);
+        });
+
+        it("Should reject the zero address", async () => {
+            const { mockToken, veVelvet } = await setupTest();
+            const amount = ethers.parseEther("100");
+
+            await mockToken.approve(veVelvet.target, amount);
+            await expect(
+                veVelvet.stakeFor(ethers.ZeroAddress, amount, 26, false)
+            ).to.be.revertedWith("Invalid account");
+        });
+
+        it("Should stake for many accounts in one call", async () => {
+            const { mockToken, veVelvet, deployer, user1, user2 } = await setupTest();
+            const a1 = ethers.parseEther("100");
+            const a2 = ethers.parseEther("250");
+
+            const adminBefore = await mockToken.balanceOf(deployer.address);
+            await mockToken.approve(veVelvet.target, a1 + a2);
+            await veVelvet.stakeForBatch([user1.address, user2.address], [a1, a2], 26, false);
+
+            expect(await mockToken.balanceOf(deployer.address)).to.equal(adminBefore - (a1 + a2));
+            expect(await veVelvet.stakedAmountOf(user1.address)).to.equal(a1);
+            expect(await veVelvet.stakedAmountOf(user2.address)).to.equal(a2);
+            expect(await veVelvet.numPositions(user1.address)).to.equal(1n);
+            expect(await veVelvet.numPositions(user2.address)).to.equal(1n);
+        });
+
+        it("Should reject malformed batches", async () => {
+            const { mockToken, veVelvet, user1, user2 } = await setupTest();
+            const amount = ethers.parseEther("100");
+            await mockToken.approve(veVelvet.target, amount * 2n);
+
+            await expect(
+                veVelvet.stakeForBatch([user1.address, user2.address], [amount], 26, false)
+            ).to.be.revertedWith("Length mismatch");
+
+            await expect(
+                veVelvet.stakeForBatch([], [], 26, false)
+            ).to.be.revertedWith("Empty batch");
+        });
+
+        it("Should still enforce MAX_POSITIONS per recipient", async () => {
+            const { mockToken, veVelvet, user1 } = await setupTest();
+            const amount = ethers.parseEther("1");
+
+            await mockToken.approve(veVelvet.target, ethers.parseEther("201"));
+            for (let i = 0; i < 200; i++) {
+                await veVelvet.stakeFor(user1.address, amount, 26, false);
+            }
+            expect(await veVelvet.numPositions(user1.address)).to.equal(200n);
+
+            await expect(
+                veVelvet.stakeFor(user1.address, amount, 26, false)
+            ).to.be.revertedWith("Maximum positions reached");
+        });
+
+        it("Should apply the same validation as stake()", async () => {
+            const { mockToken, veVelvet, user1 } = await setupTest();
+            const amount = ethers.parseEther("100");
+            await mockToken.approve(veVelvet.target, amount);
+
+            await expect(
+                veVelvet.stakeFor(user1.address, 0, 26, false)
+            ).to.be.revertedWith("Amount must be greater than 0");
+            await expect(
+                veVelvet.stakeFor(user1.address, amount, 0, false)
+            ).to.be.revertedWith("Num weeks must be greater than 0");
+            await expect(
+                veVelvet.stakeFor(user1.address, amount, 31, false)
+            ).to.be.revertedWith("Num weeks must be less than max weeks");
+
+            // autoRenew still forces numWeeks to maxWeeks, same as stake()
+            await veVelvet.stakeFor(user1.address, amount, 5, true);
+            const lock = (await veVelvet.getPositions(user1.address, 0, 1))[0];
+            expect(lock.numWeeks).to.equal(30);
+            expect(lock.autoRenew).to.equal(true);
+            expect(await veVelvet.balanceOf(user1.address)).to.equal(amount);
+        });
+    });
+});
