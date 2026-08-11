@@ -47,6 +47,11 @@ contract veVelvet is
     event AdminUnlocked(bool adminUnlocked);
     bool public adminUnlocked;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(
         address baseToken_,
         uint8 maxWeeks_
