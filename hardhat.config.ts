@@ -4,7 +4,10 @@ import "@openzeppelin/hardhat-upgrades";
 import "hardhat-deploy";
 import "dotenv/config";
 const config: HardhatUserConfig = {
-  solidity: "0.8.30",
+  solidity: {
+    version: "0.8.30",
+    settings: { optimizer: { enabled: true, runs: 200 } },
+  },
   namedAccounts: {
     deployer: {
       default: 0,
@@ -54,6 +57,7 @@ const config: HardhatUserConfig = {
       base: `${process.env.ETHERSCAN_KEY}`,
       bsc: `${process.env.BSCSCAN_KEY}`,
     },
+    enabled: true,
   },
   sourcify: {
     enabled: true
